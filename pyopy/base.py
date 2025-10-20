@@ -377,7 +377,7 @@ class PyopyTransplanter(object):
             if name.startswith('_'):
                 raise Exception('Invalid name {0}'.format(name))
         # unicode
-        varnames = map(unicode, varnames)
+        varnames = list(map(str, varnames))
         # int -> float (beware of too much magic)
         if int2float:
             values = ints2floats_tuples2lists(*values)
@@ -849,4 +849,4 @@ def outputs_from_command(command):
     if not has_out_names:
         return ['ans']
     out_names = command[:command.find('(')].partition('=')[0].strip().replace('[', '').replace(']', '')
-    return map(str.strip if not isinstance(command, unicode) else unicode.strip, out_names.split(','))
+    return list(map(str.strip, out_names.split(',')))

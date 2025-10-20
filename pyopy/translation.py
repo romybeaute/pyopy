@@ -230,7 +230,7 @@ class MatlabcallTreeVisitor(PTNodeVisitor):
 
     @staticmethod
     def visit_a_matrix_row(_, children):
-        return np.hstack(map(np.atleast_1d, children))
+        return np.hstack(list(map(np.atleast_1d, children)))
 
     @staticmethod
     def visit_a_2d_matrix(_, children):
@@ -246,7 +246,7 @@ class MatlabcallTreeVisitor(PTNodeVisitor):
 
     @staticmethod
     def visit_a_cell_row(_, children):
-        return np.array(list(children), dtype=np.object)
+        return np.array(list(children), dtype=object)
 
     @staticmethod
     def visit_a_2d_cell(_, children):

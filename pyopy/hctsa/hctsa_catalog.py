@@ -65,8 +65,13 @@ class HCTSAFunction(object):
         return sorted(set(chain.from_iterable(operation.tags() for operation in self.operations)))
 
     def known_outputs(self):
-        """Returns a sorted tuple with the outputs declared in HCTSA metadata for this function."""
-        return tuple(sorted(set(operation.known_outputs() for operation in self.operations)))
+      """Returns the names of the known outputs for this operation as a tuple."""
+      all_outputs = set()
+      for operation in self.operations:
+          output = operation.known_outputs()
+          if output is not None:
+              all_outputs.add(output)
+      return tuple(sorted(all_outputs))
 
 
 class HCTSAFeature(object):
@@ -161,8 +166,7 @@ class HCTSAOperation(object):
         self.features.append(hctsa_feature)
 
     def known_outputs(self):
-        """Returns the names of the known outputs for this operation as a tuple."""
-        return tuple(sorted(feat.outname for feat in self.features))
+      return self.opname
 
     def tags(self):
         """Returns a sorted list with the tags on all features which arise from this operation."""

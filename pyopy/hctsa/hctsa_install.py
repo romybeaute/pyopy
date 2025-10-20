@@ -1,6 +1,7 @@
 # coding=utf-8
 """Fix, install, mex HCTSA in octave/matlab land."""
 from __future__ import print_function
+import urllib.request
 import os
 import os.path as op
 import shutil
@@ -26,7 +27,7 @@ def _download_hctsa(force=False, release_or_branch='v0.9', use_git=False):
         url = 'https://github.com/benfulcher/hctsa/archive/%s.tar.gz' % release_or_branch
         tar = op.join(op.dirname(HCTSA_DIR), 'hctsa-%s.tar.gz' % release_or_branch)
         print('Downloading %s...' % url)
-        urllib.urlretrieve(url, tar)
+        urllib.request.urlretrieve(url, tar)
         print('Decompressing %s...' % tar)
         with tarfile.open(tar, 'r:gz') as tfile:
             tfile.extractall(op.dirname(tar))
@@ -51,7 +52,8 @@ def _download_hctsa(force=False, release_or_branch='v0.9', use_git=False):
 def _fix_fnames():
     """Fixes functions that do not correspond to their file name."""
     for mfile, wrong_funcname in {'SB_MotifThree.m': 'ST_MotifThree'}.items():
-        rename_matlab_func(op.join(HCTSA_DIR, 'Operations', mfile), wrong_funcname)
+        pass
+	#rename_matlab_func(op.join(HCTSA_DIR, 'Operations', mfile), wrong_funcname)
 
 
 def _fix_shadowing():

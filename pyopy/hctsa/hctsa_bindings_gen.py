@@ -177,7 +177,13 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
         # Split the generated function code...
         # All this nastiness out of lazyness (did first function generation and do not feel like redoing right now)
         deflines, _, body = hctsa_function.partition('):\n')
-        name = deflines[4:].partition('(')[0][len(function_prefix):]
+        # name = deflines[4:].partition('(')[0][len(function_prefix):]
+        parsed_name = deflines[4:].partition('(')[0][len(function_prefix):]
+        if not parsed_name.isidentifier(): # Check if it's a valid Python identifier
+            print(f"Warning: Parsed name '{parsed_name}' is not a valid identifier. Skipping.")
+            return None, None # Signal to skip
+
+        name = parsed_name
         args_string = deflines.partition('(eng, x, ')[2]
         docstring, _, body = body.rpartition('"""')
         docstring += '"""'
@@ -296,7 +302,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
         binding_imports = (
             'from pyopy.base import MatlabSequence',
             'from pyopy.hctsa.hctsa_bindings_gen import HCTSASuper, HCTSAOperation')
-        exec('\n'.join(binding_imports) in globals())  # We are using nasty execs around that need these imports
+        exec('\n'.join(binding_imports),globals())  # We are using nasty execs around that need these imports
         # Write the header
         writer.write('# coding=utf-8\n')
         writer.write('\n'.join(binding_imports) + '\n\n\n')
@@ -316,6 +322,8 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
                 writer.write('\n\n\n')
 
             classname, classdef = gen_class_from_function_string(funcdef, func.params, catalog=hctsa_catalog)
+            if classname is None: # Check if generation was skipped
+                continue
 
             writer.write(classdef)
             writer.write('\n\n\n')

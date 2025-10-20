@@ -102,7 +102,7 @@ def get_data(val):
             data[key] = get_data(val[key][0])
         return data
     # handle cell arrays
-    if val.dtype == np.object:
+    if val.dtype == object:
         if val.size == 1:
             val = val[0]
             if "'|O" in str(val.dtype) or "O'" in str(val.dtype):
@@ -111,7 +111,7 @@ def get_data(val):
                 return val
             if val.size == 1:
                 val = val.flatten()
-    if val.dtype == np.object:
+    if val.dtype == object:
         if len(val.shape) > 2:
             val = val.T
             val = np.array([get_data(val[i].T)
