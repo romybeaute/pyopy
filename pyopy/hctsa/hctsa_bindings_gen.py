@@ -164,19 +164,15 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
         # assemble all together
         return pyfuncname, '\n'.join([defline, doc_line, body_line])
 
-    def gen_class_from_function_string(hctsa_function, func_params, function_prefix='HCTSA_', catalog=None):
+    def gen_class_from_function_string(hctsa_function, original_funcname, func_params, function_prefix='HCTSA_', catalog=None):
 
-        
-
+        if catalog is None: catalog = HCTSACatalog.catalog()
 
         # Our indentation levels
         indent1 = ' ' * 4
         indent2 = ' ' * 8
 
-        # known outputs and tags (Original lines)
-        outputs_string = indent1 + 'KNOWN_OUTPUTS_SIZES = %r' % (
-            tuple(len(k) for k in catalog.functions_dict[name].known_outputs()),)
-        tags_string = indent1 + 'TAGS = %r' % (tuple(catalog.functions_dict[name].tags()), )
+
 
         if catalog is None:
             catalog = HCTSACatalog.catalog()
@@ -192,12 +188,24 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
             print(f"Warning: Could not parse deflines from hctsa_function: '{hctsa_function[:100]}...'. Skipping.")
             return None, None # Cannot proceed without deflines
 
-        name = deflines[4:].partition('(')[0][len(function_prefix):]
-        name = name.replace('def ', '').strip()
-        print(f"DEBUG: Trying to access catalog with key: '{name}'")
-        if not name.isidentifier():
-            print(f"Warning: Parsed name '{name}' from line '{funcdef.strip()}' is not a valid identifier after cleaning. Skipping.")
-            return None, None
+        # name = deflines[4:].partition('(')[0][len(function_prefix):]
+        # name = name.replace('def ', '').strip()
+
+        # print(f"DEBUG: Trying to access catalog with key: '{name}'")
+        # if not name.isidentifier():
+        #     print(f"Warning: Parsed name '{name}' from line '{funcdef.strip()}' is not a valid identifier after cleaning. Skipping.")
+        #     return None, None
+        py_classname_base = deflines[4:].partition('(')[0][len(function_prefix):]
+        py_classname_base = py_classname_base.replace('def ', '').strip()
+
+        print(f"DEBUG: Using catalog key: '{original_funcname}', Python class base: '{py_classname_base}'") # Updated DEBUG print
+
+        # Check if the cleaned name is valid for a class name
+        if not py_classname_base.isidentifier():
+            print(f"Warning: Parsed python class name '{py_classname_base}' from line '{funcdef.strip()}' is not valid. Skipping.")
+            return None, None # Signal to skip
+
+
 
         # name = deflines[4:].partition('(')[0][len(function_prefix):]
         # parsed_name = deflines[4:].partition('(')[0][len(function_prefix):]
@@ -230,8 +238,8 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
 
         # known outputs and tags
         outputs_string = indent1 + 'KNOWN_OUTPUTS_SIZES = %r' % (
-            tuple(len(k) for k in catalog.functions_dict[name].known_outputs()),)
-        tags_string = indent1 + 'TAGS = %r' % (tuple(catalog.functions_dict[name].tags()), )
+            tuple(len(k) for k in catalog.functions_dict[original_funcname].known_outputs()),)
+        tags_string = indent1 + 'TAGS = %r' % (tuple(catalog.functions_dict[original_funcname].tags()), )
         if len(tags_string) > 120:
             comma = tags_string.find(', ', 90)
             tags_string = tags_string[:comma] + '\n' + ' ' * len(indent1 + 'TAGS = (') + tags_string[comma + 2:]
@@ -246,7 +254,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
                 constructor_string = indent1 + 'def __init__(self, %s):\n' % args_string
         else:
             constructor_string = indent1 + 'def __init__(self):\n'
-        constructor_string += indent2 + 'super(%s, self).__init__()\n' % name
+        constructor_string += indent2 + 'super(%s, self).__init__()\n' % py_classname_base
         if len(func_params) > 0:
             constructor_string += indent2 + indent2.join('self.%s = %s\n' % (param, param) for param in func_params)
 
@@ -265,14 +273,14 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
 
         # put all together
         code = [
-            'class %s(HCTSASuper):' % name,
+            'class %s(HCTSASuper):' % py_classname_base,
             docstring + '\n',
             outputs_string + '\n',
             tags_string + '\n',
             constructor_string,
             eval_method,
         ]
-        return name, '\n'.join(code)
+        return py_classname_base, '\n'.join(code)
 
     def gen_operations_class(catalog=None, add_commented_out=False):
         """Returns text with all the metaops in the current HCTSA release under a class namespace."""
@@ -344,7 +352,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
                 writer.write(funcdef)
                 writer.write('\n\n\n')
 
-            classname, classdef = gen_class_from_function_string(funcdef, func.params, catalog=hctsa_catalog)
+            classname, classdef = gen_class_from_function_string(funcdef, func.funcname, func.params, catalog=hctsa_catalog)
             if classname is None: # Check if generation was skipped
                 continue
 
