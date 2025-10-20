@@ -134,8 +134,8 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
             ', ' + ', '.join(['%s=%r' % (param, default) for param, default in zip(parameters, defaults)])
         # ...better tuples than lists...
         parameter_string = parameter_string.replace('[', '(').replace(']', ')')
-        parameter_string = parameter_string.replace('array(', 'np.array(')
-        parameter_string = parameter_string.replace('dtype=float64', 'dtype=np.float64')
+        # parameter_string = parameter_string.replace('array(', 'np.array(')
+        # parameter_string = parameter_string.replace('dtype=float64', 'dtype=np.float64')
         # def line
         defline = 'def %s(eng, x%s):' % (pyfuncname, parameter_string)
         # ...cosmetic for long lines
@@ -331,6 +331,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
         # Bindings imports
         binding_imports = (
             'import numpy as np',
+            'from numpy import array, float64',
             'from pyopy.base import MatlabSequence',
             'from pyopy.hctsa.hctsa_bindings_gen import HCTSASuper, HCTSAOperation')
         exec('\n'.join(binding_imports),globals())  # We are using nasty execs around that need these imports
