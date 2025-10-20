@@ -291,8 +291,8 @@ class HCTSACatalog(object):
                         HCTSAOperation(operationname, callspec, funcname, params,
                                        is_commented, standardize=is_standardized)
         except IOError:
-            print 'ERROR: Cannot find the HCTSA mops file "%s".\n' \
-                  '       Maybe run pyopy/hctsa/hctsa_install.py?' % self.mops_file
+            print('ERROR: Cannot find the HCTSA mops file "%s".\n' \
+                  '       Maybe run pyopy/hctsa/hctsa_install.py?' % self.mops_file)
             raise
 
         #

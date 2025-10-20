@@ -11,7 +11,7 @@ import argh
 from pyopy.base import PyopyEngines
 from pyopy.hctsa.hctsa_bindings_gen import gen_bindings
 from pyopy.hctsa.hctsa_config import HCTSA_DIR, HCTSA_TOOLBOXES_DIR, HCTSA_MOPS_FILE, HCTSA_OPS_FILE
-from pyopy.code import rename_matlab_func
+#from pyopy.code import rename_matlab_func
 from pyopy.misc import ensure_dir, cd
 
 

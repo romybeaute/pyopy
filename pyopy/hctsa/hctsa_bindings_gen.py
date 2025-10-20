@@ -296,7 +296,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
         binding_imports = (
             'from pyopy.base import MatlabSequence',
             'from pyopy.hctsa.hctsa_bindings_gen import HCTSASuper, HCTSAOperation')
-        exec '\n'.join(binding_imports) in globals()  # We are using nasty execs around that need these imports
+        exec('\n'.join(binding_imports) in globals())  # We are using nasty execs around that need these imports
         # Write the header
         writer.write('# coding=utf-8\n')
         writer.write('\n'.join(binding_imports) + '\n\n\n')

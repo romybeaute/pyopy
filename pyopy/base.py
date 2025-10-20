@@ -6,7 +6,7 @@ from future.utils import raise_from, string_types
 
 import atexit
 import copy
-from itertools import izip
+izip = zip
 import os.path as op
 
 import numpy as np
