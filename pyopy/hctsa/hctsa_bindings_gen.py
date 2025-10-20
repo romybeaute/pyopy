@@ -310,6 +310,8 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
                 lines.append('    \'%s\',' % operation.opname)
                 lines.append('    %r,' % operation.opcall)
                 instline = '    %s(%s))\n' % (fname, params_string)
+                # python_classname = 'HCTSA_' + fname
+                # instline = '    %s(%s))\n' % (python_classname, params_string)
                 if len(instline) < 110:
                     lines.append(instline)
                 else:

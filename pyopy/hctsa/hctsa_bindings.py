@@ -1,4 +1,6 @@
 # coding=utf-8
+import numpy as np
+from numpy import array, float64
 from pyopy.base import MatlabSequence
 from pyopy.hctsa.hctsa_bindings_gen import HCTSASuper, HCTSAOperation
 
@@ -4680,6 +4682,72 @@ class NL_TSTL_FractalDimensions(HCTSASuper):
                                 self.gstart, self.gend, self.past, self.steps, self.embedParams)
 
 
+class HCTSA_NL_TSTL_GPCorrSum(HCTSASuper):
+    """
+    Matlab doc:
+    ----------------------------------------
+    %
+    %---INPUTS:
+    % y, column vector of time-series data
+    % Nref, number of (randomly-chosen) reference points (-1: use all points,
+    %       if a decimal, then use this fraction of the time series length)
+    % r, maximum search radius relative to attractor size, 0 < r < 1
+    % thwin, number of samples to exclude before and after each reference index
+    %        (~ Theiler window)
+    % nbins, number of partitioned bins
+    % embedParams, embedding parameters to feed BF_embed.m for embedding the
+    %               signal in the form {tau,m}
+    % doTwo, if this is set to 1, will use corrsum, if set to 2, will use corrsum2.
+    %           For corrsum2, n specifies the number of pairs per bin. Default is 1,
+    %           to use corrsum.
+    %
+    %---OUTPUTS: basic statistics on the outputs of corrsum, including iteratively
+    % re-weighted least squares linear fits to log-log plots using the robustfit
+    % function in Matlab's Statistics Toolbox.
+    %
+    % Uses TSTOOL code corrsum (or corrsum2) to compute scaling of the correlation
+    % sum for a time-delay reconstructed time series by the Grassberger-Proccacia
+    % algorithm using fast nearest-neighbor search.
+    %
+    % cf. "Characterization of Strange Attractors", P. Grassberger and I. Procaccia,
+    % Phys. Rev. Lett. 50(5) 346 (1983)
+    %
+    % TSTOOL: http://www.physik3.gwdg.de/tstool/
+    
+    ----------------------------------------
+    """
+
+    KNOWN_OUTPUTS_SIZES = (40, 40, 41, 40)
+
+    TAGS = ('correlation', 'corrsum', 'nonlinear', 'stochastic', 'tstool')
+
+    def __init__(self, Nref=-1.0, r=0.5, thwin=40.0, nbins=20.0, embedParams=array(('ac', 'fnnmar'), dtype=object), doTwo=1.0):
+        super(HCTSA_NL_TSTL_GPCorrSum, self).__init__()
+        self.Nref = Nref
+        self.r = r
+        self.thwin = thwin
+        self.nbins = nbins
+        self.embedParams = embedParams
+        self.doTwo = doTwo
+
+    def _eval_hook(self, eng, x):
+        if self.Nref is None:
+            return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, )
+        elif self.r is None:
+            return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref)
+        elif self.thwin is None:
+            return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r)
+        elif self.nbins is None:
+            return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r, self.thwin)
+        elif self.embedParams is None:
+            return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r, self.thwin, self.nbins)
+        elif self.doTwo is None:
+            return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r, self.thwin,
+                                    self.nbins, self.embedParams)
+        return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r, self.thwin, self.nbins,
+                                self.embedParams, self.doTwo)
+
+
 class NL_TSTL_LargestLyap(HCTSASuper):
     """
     Matlab doc:
@@ -4786,6 +4854,60 @@ class NL_TSTL_PoincareSection(HCTSASuper):
         elif self.embedParams is None:
             return eng.run_function(1, 'NL_TSTL_PoincareSection', x, self.ref)
         return eng.run_function(1, 'NL_TSTL_PoincareSection', x, self.ref, self.embedParams)
+
+
+class HCTSA_NL_TSTL_ReturnTime(HCTSASuper):
+    """
+    Matlab doc:
+    ----------------------------------------
+    %
+    % Return times are the time taken for the time series to return to a similar
+    % location in phase space for a given reference point
+    %
+    % Strong peaks in the histogram are indicative of periodicities in the data.
+    %
+    %---INPUTS:
+    %
+    % y, scalar time series as a column vector
+    % NNR, number of nearest neighbours
+    % maxT, maximum return time to consider
+    % past, Theiler window
+    % Nref, number of reference indicies
+    % embedParams, to feed into BF_embed
+    %
+    %---OUTPUTS: include basic measures from the histogram, including the occurrence of
+    % peaks, spread, proportion of zeros, and the distributional entropy.
+    
+    % Uses the code, return_time, from TSTOOL.
+    % TSTOOL: http://www.physik3.gwdg.de/tstool/
+    ----------------------------------------
+    """
+
+    KNOWN_OUTPUTS_SIZES = (35, 33, 32)
+
+    TAGS = ('nonlinear', 'returntime', 'tstool')
+
+    def __init__(self, NNR=10.0, maxT=1.0, past=1.0, Nref=-1.0, embedParams=array(('ac', 8), dtype=object)):
+        super(HCTSA_NL_TSTL_ReturnTime, self).__init__()
+        self.NNR = NNR
+        self.maxT = maxT
+        self.past = past
+        self.Nref = Nref
+        self.embedParams = embedParams
+
+    def _eval_hook(self, eng, x):
+        if self.NNR is None:
+            return eng.run_function(1, 'NL_TSTL_ReturnTime', x, )
+        elif self.maxT is None:
+            return eng.run_function(1, 'NL_TSTL_ReturnTime', x, self.NNR)
+        elif self.past is None:
+            return eng.run_function(1, 'NL_TSTL_ReturnTime', x, self.NNR, self.maxT)
+        elif self.Nref is None:
+            return eng.run_function(1, 'NL_TSTL_ReturnTime', x, self.NNR, self.maxT, self.past)
+        elif self.embedParams is None:
+            return eng.run_function(1, 'NL_TSTL_ReturnTime', x, self.NNR, self.maxT, self.past, self.Nref)
+        return eng.run_function(1, 'NL_TSTL_ReturnTime', x, self.NNR, self.maxT, self.past,
+                                self.Nref, self.embedParams)
 
 
 class NL_TSTL_TakensEstimator(HCTSASuper):
@@ -7519,8 +7641,10 @@ HCTSA_ALL_CLASSES = (
     NL_TISEAN_d2,
     NL_TISEAN_fnn,
     NL_TSTL_FractalDimensions,
+    HCTSA_NL_TSTL_GPCorrSum,
     NL_TSTL_LargestLyap,
     NL_TSTL_PoincareSection,
+    HCTSA_NL_TSTL_ReturnTime,
     NL_TSTL_TakensEstimator,
     NL_TSTL_acp,
     NL_TSTL_dimensions,
@@ -14354,7 +14478,7 @@ class HCTSAOperations(object):
     NL_TSTL_GPCorrSum2_n1_05_40_20_ac_fnnmar = HCTSAOperation(
         'NL_TSTL_GPCorrSum2_n1_05_40_20_ac_fnnmar',
         "NL_TSTL_GPCorrSum(y,-1,0.5,40,20,{'ac','fnnmar'},1)",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedParams=array(['ac', 'fnnmar'],
+        HCTSA_NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedParams=array(['ac', 'fnnmar'],
                           dtype=object), doTwo=1))
 
     # outs: N,L,_,T,S
@@ -14370,7 +14494,7 @@ class HCTSAOperations(object):
     NL_TSTL_GPCorrSum2_n1_05_100_20_ac_fnnmar = HCTSAOperation(
         'NL_TSTL_GPCorrSum2_n1_05_100_20_ac_fnnmar',
         "NL_TSTL_GPCorrSum(y,-1,0.5,100,20,{'ac','fnnmar'},1)",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedParams=array(['ac', 'fnnmar'],
+        HCTSA_NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedParams=array(['ac', 'fnnmar'],
                           dtype=object), doTwo=1))
 
     # outs: N,L,_,T,S
@@ -14385,7 +14509,7 @@ class HCTSAOperations(object):
     NL_TSTL_GPCorrSum2_n1_01_40_20_ac_fnnmar = HCTSAOperation(
         'NL_TSTL_GPCorrSum2_n1_01_40_20_ac_fnnmar',
         "NL_TSTL_GPCorrSum(y,-1,0.1,40,20,{'ac','fnnmar'},1)",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedParams=array(['ac', 'fnnmar'],
+        HCTSA_NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedParams=array(['ac', 'fnnmar'],
                           dtype=object), doTwo=1))
 
     # outs: N,L,_,T,S
@@ -14400,7 +14524,7 @@ class HCTSAOperations(object):
     NL_TSTL_GPCorrSum2_n1_01_40_40_ac_fnnmar = HCTSAOperation(
         'NL_TSTL_GPCorrSum2_n1_01_40_40_ac_fnnmar',
         "NL_TSTL_GPCorrSum(y,-1,0.1,40,40,{'ac','fnnmar'},1)",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedParams=array(['ac', 'fnnmar'],
+        HCTSA_NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedParams=array(['ac', 'fnnmar'],
                           dtype=object), doTwo=1))
 
     # outs: N,L,_,T,S
@@ -14479,7 +14603,7 @@ class HCTSAOperations(object):
     NL_TSTL_ReturnTime_10_1_1_n1_ac_8 = HCTSAOperation(
         'NL_TSTL_ReturnTime_10_1_1_n1_ac_8',
         "NL_TSTL_ReturnTime(y,10,1,1,-1,{'ac',8})",
-        NL_TSTL_ReturnTime(NNR=10, maxT=1, past=1, Nref=-1, embedParams=array(['ac', 8], dtype=object)))
+        HCTSA_NL_TSTL_ReturnTime(NNR=10, maxT=1, past=1, Nref=-1, embedParams=array(['ac', 8], dtype=object)))
 
     # outs: N,L,_,T,S
     # outs: T,L,_,R,e
@@ -14492,7 +14616,7 @@ class HCTSAOperations(object):
     NL_TSTL_ReturnTime_5_1_40_n1_1_8 = HCTSAOperation(
         'NL_TSTL_ReturnTime_5_1_40_n1_1_8',
         'NL_TSTL_ReturnTime(y,5,1,40,-1,{1,8})',
-        NL_TSTL_ReturnTime(NNR=5, maxT=1, past=40, Nref=-1, embedParams=array([1, 8], dtype=object)))
+        HCTSA_NL_TSTL_ReturnTime(NNR=5, maxT=1, past=40, Nref=-1, embedParams=array([1, 8], dtype=object)))
 
     # outs: N,L,_,T,S
     # outs: T,L,_,R,e
@@ -14505,7 +14629,7 @@ class HCTSAOperations(object):
     NL_TSTL_ReturnTime_005_1_005_n1_1_3 = HCTSAOperation(
         'NL_TSTL_ReturnTime_005_1_005_n1_1_3',
         'NL_TSTL_ReturnTime(y,0.05,1,0.05,-1,{1,3})',
-        NL_TSTL_ReturnTime(NNR=0.05, maxT=1, past=0.05, Nref=-1, embedParams=array([1, 3], dtype=object)))
+        HCTSA_NL_TSTL_ReturnTime(NNR=0.05, maxT=1, past=0.05, Nref=-1, embedParams=array([1, 3], dtype=object)))
 
     # outs: N,L,_,T,S
     # outs: T,L,_,T,a
