@@ -11,6 +11,7 @@ from pyopy.hctsa.hctsa_data import hctsa_sine
 from pyopy.base import PyopyEngines
 from pyopy.hctsa.hctsa_transformers import hctsa_prepare_input
 from pyopy.misc import ensure_python_package
+import numpy as np
 
 
 @whatable
@@ -133,6 +134,8 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
             ', ' + ', '.join(['%s=%r' % (param, default) for param, default in zip(parameters, defaults)])
         # ...better tuples than lists...
         parameter_string = parameter_string.replace('[', '(').replace(']', ')')
+        parameter_string = parameter_string.replace('array(', 'np.array(')
+        parameter_string = parameter_string.replace('dtype=float64', 'dtype=np.float64')
         # def line
         defline = 'def %s(eng, x%s):' % (pyfuncname, parameter_string)
         # ...cosmetic for long lines
@@ -177,13 +180,20 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
         # Split the generated function code...
         # All this nastiness out of lazyness (did first function generation and do not feel like redoing right now)
         deflines, _, body = hctsa_function.partition('):\n')
-        # name = deflines[4:].partition('(')[0][len(function_prefix):]
-        parsed_name = deflines[4:].partition('(')[0][len(function_prefix):]
-        if not parsed_name.isidentifier(): # Check if it's a valid Python identifier
-            print(f"Warning: Parsed name '{parsed_name}' is not a valid identifier. Skipping.")
-            return None, None # Signal to skip
 
-        name = parsed_name
+        name = deflines[4:].partition('(')[0][len(function_prefix):]
+        name = name.replace('def ', '').strip()
+        if not name.isidentifier():
+            print(f"Warning: Parsed name '{name}' from line '{funcdef.strip()}' is not a valid identifier after cleaning. Skipping.")
+            return None, None
+
+        # name = deflines[4:].partition('(')[0][len(function_prefix):]
+        # parsed_name = deflines[4:].partition('(')[0][len(function_prefix):]
+        # if not parsed_name.isidentifier(): # Check if it's a valid Python identifier
+        #     print(f"Warning: Parsed name '{parsed_name}' is not a valid identifier. Skipping.")
+        #     return None, None # Signal to skip
+
+        # name = parsed_name
         args_string = deflines.partition('(eng, x, ')[2]
         docstring, _, body = body.rpartition('"""')
         docstring += '"""'
@@ -300,6 +310,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
     with codecs.open(HCTSA_BINDINGS_FILE, mode='w', encoding='utf-8') as writer:
         # Bindings imports
         binding_imports = (
+            'import numpy as np',
             'from pyopy.base import MatlabSequence',
             'from pyopy.hctsa.hctsa_bindings_gen import HCTSASuper, HCTSAOperation')
         exec('\n'.join(binding_imports),globals())  # We are using nasty execs around that need these imports
