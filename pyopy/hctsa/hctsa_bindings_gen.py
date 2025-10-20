@@ -166,12 +166,20 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
 
     def gen_class_from_function_string(hctsa_function, func_params, function_prefix='HCTSA_', catalog=None):
 
-        if catalog is None:
-            catalog = HCTSACatalog.catalog()
+        
+
 
         # Our indentation levels
         indent1 = ' ' * 4
         indent2 = ' ' * 8
+
+        # known outputs and tags (Original lines)
+        outputs_string = indent1 + 'KNOWN_OUTPUTS_SIZES = %r' % (
+            tuple(len(k) for k in catalog.functions_dict[name].known_outputs()),)
+        tags_string = indent1 + 'TAGS = %r' % (tuple(catalog.functions_dict[name].tags()), )
+
+        if catalog is None:
+            catalog = HCTSACatalog.catalog()
 
         # Avoid shadowing + work well with whatami
         func_params = [{'ord': 'ordd'}.get(param, param) for param in func_params]
@@ -180,9 +188,13 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
         # Split the generated function code...
         # All this nastiness out of lazyness (did first function generation and do not feel like redoing right now)
         deflines, _, body = hctsa_function.partition('):\n')
+        if not deflines:
+            print(f"Warning: Could not parse deflines from hctsa_function: '{hctsa_function[:100]}...'. Skipping.")
+            return None, None # Cannot proceed without deflines
 
         name = deflines[4:].partition('(')[0][len(function_prefix):]
         name = name.replace('def ', '').strip()
+        print(f"DEBUG: Trying to access catalog with key: '{name}'")
         if not name.isidentifier():
             print(f"Warning: Parsed name '{name}' from line '{funcdef.strip()}' is not a valid identifier after cleaning. Skipping.")
             return None, None
