@@ -80,7 +80,7 @@ class HCTSAOperation(object):
 
     def must_standardize(self):
         if self._must_standardize is None:
-            from hctsa_catalog import HCTSACatalog
+            from .hctsa_catalog import HCTSACatalog
             self._must_standardize = HCTSACatalog.must_standardize(self.name)
         return self._must_standardize
 

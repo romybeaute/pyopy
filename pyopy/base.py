@@ -518,39 +518,64 @@ class PyopyEngine(object):
         finally:
             self.clear(result_vars)  # we could also avoid this burden too
 
+    # def run_function(self, nout, funcname, *args):
+    #     """Runs a function and returns the first nout values.
+
+    #     Parameters
+    #     ----------
+    #     nout: int
+    #       The number of output arguments
+
+    #     funcname: string
+    #       The name of the function to execute
+
+    #     args: values
+    #       The arguments to the call. Everything will be moved to python land except for EngineVar values
+
+    #     Returns
+    #     -------
+    #     Result(s) are the outputs already in python land (a single value if nout=1, else a list of values)
+
+    #     Raises
+    #     ------
+    #     Same as run_command.
+    #     """
+    #     result_vars = ['pyopy_result_%d' % i for i in range(self._num_results, self._num_results + nout)]
+    #     try:
+    #         with self.context(args) as args:
+    #             # N.B. we can make this more efficient easily by encoding parameters as literals in the call
+    #             if not is_iterable(args):
+    #                 args = [args]
+    #             command = u'%s=%s(%s);' % (u'[%s]' % u','.join(result_vars), funcname, u','.join(map(py2matstr, args)))
+    #             _, results = self.eval(command, outs2py=True)
+    #             return results[0] if len(results) == 1 else results
+    #     finally:
+    #         self.clear(result_vars)
+
     def run_function(self, nout, funcname, *args):
-        """Runs a function and returns the first nout values.
-
-        Parameters
-        ----------
-        nout: int
-          The number of output arguments
-
-        funcname: string
-          The name of the function to execute
-
-        args: values
-          The arguments to the call. Everything will be moved to python land except for EngineVar values
-
-        Returns
-        -------
-        Result(s) are the outputs already in python land (a single value if nout=1, else a list of values)
-
-        Raises
-        ------
-        Same as run_command.
-        """
-        result_vars = ['pyopy_result_%d' % i for i in range(self._num_results, self._num_results + nout)]
+        """Runs a function using the backend hook and returns outputs."""
         try:
-            with self.context(args) as args:
-                # N.B. we can make this more efficient easily by encoding parameters as literals in the call
-                if not is_iterable(args):
-                    args = [args]
-                command = u'%s=%s(%s);' % (u'[%s]' % u','.join(result_vars), funcname, u','.join(map(py2matstr, args)))
-                _, results = self.eval(command, outs2py=True)
-                return results[0] if len(results) == 1 else results
-        finally:
-            self.clear(result_vars)
+            # Directly call the backend-specific hook
+            results = self._run_function_hook(nout, funcname, args)
+
+            # Ensure results are returned consistently (single value or tuple)
+            if nout == 1:
+                return results
+            elif nout == 0:
+                return None # Or handle as needed if MATLAB returns something anyway
+            else:
+                # If MATLAB returns single item for multi-nout request, wrap it
+                if not isinstance(results, (list, tuple)):
+                    results = (results,)
+                return results
+        except Exception as e:
+            # Simple error wrapping for now
+            response = EngineResponse(success=False, code=f"{funcname}(...)", exception=e, stderr=str(e))
+            raise_from(EngineException(response, str(e)), e)
+
+    def _run_function_hook(self, nout, funcname, args):
+        """Backend-specific hook to execute a function by name."""
+        raise NotImplementedError()
 
     def put(self, varnames, values, int2float=None):
         return self.transplanter.put(varnames, values, self, int2float=int2float)

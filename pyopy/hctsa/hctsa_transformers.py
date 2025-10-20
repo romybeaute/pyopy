@@ -1,5 +1,5 @@
 # coding=utf-8
-import numpy as np
+# import numpy as np
 from whatami import whatable
 
 
@@ -33,7 +33,7 @@ def hctsa_prepare_input(x, z_scored=False):
         raise Exception('Only one dimensional column vectors for HCTSA, please')
     elif x.shape[1] != 1:
         raise Exception('Only column vectors for HCTSA, please')
-    x = x.astype(np.float)
+    x = x.astype(float)
     if z_scored:
         return matlab_standardize(x)
     return x

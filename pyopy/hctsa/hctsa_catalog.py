@@ -452,7 +452,7 @@ class HCTSACatalog(object):
     @staticmethod
     def allops():
         if HCTSACatalog._allops is None:
-            from hctsa_bindings import HCTSAOperations
+            from .hctsa_bindings import HCTSAOperations
             HCTSACatalog._allops = sorted((name, comp[2]) for name, comp in HCTSAOperations.__dict__.items()
                                           if not name.startswith('_'))
         return HCTSACatalog._allops
@@ -462,7 +462,7 @@ class HCTSACatalog(object):
         """Finds the correspondence between a whatami id and the HCTSA operator."""
         if HCTSACatalog._whatami2hctsa is None:
             HCTSACatalog._whatami2hctsa = {}
-            from hctsa_bindings import HCTSAOperations
+            from .hctsa_bindings import HCTSAOperations
             for hctsaop, comp in HCTSACatalog.allops():
                 # N.B. this is not unique until we use a Standardizer for these features which require standardisation
                 HCTSACatalog._whatami2hctsa[comp.what().id()] = (hctsaop, comp)

@@ -14,7 +14,7 @@ def prepare(engine='matlab',
     # TODO: a fast function to check if hctsa has been initialised
     if eng[0] is None:
         from pyopy.base import PyopyEngines
-        from hctsa_install import hctsa_prepare_engine
+        from .hctsa_install import hctsa_prepare_engine
         print('Starting engine')
         eng[0] = PyopyEngines.engine_or_matlab_or_octave(engine)
         if warmup:
@@ -31,17 +31,18 @@ def prepare(engine='matlab',
 
 
 try:
-    import hctsa_bindings as bindings
+    from . import hctsa_bindings as bindings
+    # import hctsa_bindings as bindings
 except ImportError:
     bindings = None
 
 try:
-    from hctsa_bindings import HCTSAOperations as operations
+    from .hctsa_bindings import HCTSAOperations as operations
 except ImportError:
     operations = None
 
 try:
-    from hctsa_catalog import HCTSACatalog as catalog
+    from .hctsa_catalog import HCTSACatalog as catalog
     catalog = catalog.catalog()
 except ImportError:
     catalog = None

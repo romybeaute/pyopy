@@ -43,11 +43,27 @@ class MathworksTransplanter(PyopyTransplanter):
             return eng.session().workspace[varnames[0]]
         return map(eng.session().workspace.__getitem__, varnames)
 
+    # def _put_hook(self, varnames, values, eng, int2float):
+    #     for name, value in zip(varnames, values):
+    #         name = str(name) if isinstance(name, unicode) else name  # no unicode for matlab 2014b
+    #         value = str(value) if isinstance(value, unicode) else value  # no unicode for matlab 2014b
+    #         eng.session().workspace[name] = value
     def _put_hook(self, varnames, values, eng, int2float):
-        for name, value in zip(varnames, values):
-            name = str(name) if isinstance(name, unicode) else name  # no unicode for matlab 2014b
-            value = str(value) if isinstance(value, unicode) else value  # no unicode for matlab 2014b
-            eng.session().workspace[name] = value
+        """Hook to put variables using matlabengine via eval."""
+        matlab_eng = eng.session() # Get the actual matlab engine session
+        # Create a dictionary mapping Python variable names to their values
+        vars_to_put = dict(zip(varnames, values))
+        try:
+            # Use a loop and eval for each variable assignment
+            for name in varnames:
+                # Pass the single variable in the workspace dict to eval
+                # MATLAB will execute: "varname = temp_py_val;"
+                matlab_eng.eval(f"{name} = temp_py_val;", workspace={'temp_py_val': vars_to_put[name]}, nargout=0)
+        except Exception as e:
+            # Add some debugging if eval fails
+            print(f"Error during eval-based put for variable '{name}': {e}")
+            raise # Re-raise the exception
+        
 
 
 class MathworksEngine(PyopyEngine):
@@ -127,6 +143,18 @@ class MathworksEngine(PyopyEngine):
             self._session.exit()
         finally:
             self._eval = None
+    
+    def _run_function_hook(self, nout, funcname, args):
+        """Hook to run function using matlabengine's feval."""
+        matlab_eng = self.session() # Get the actual matlab engine session
+        # Use getattr to get the function from the engine object
+        # and call it directly with unpacked arguments.
+        # Ensure args is a tuple or list for unpacking with *
+        if not isinstance(args, (list, tuple)):
+            args = (args,)
+        # Convert integer args to float for MATLAB
+        args_float = tuple(float(a) if isinstance(a, int) else a for a in args)
+        return getattr(matlab_eng, funcname)(*args_float, nargout=nout)
 
 
 if __name__ == '__main__':
