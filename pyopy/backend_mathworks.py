@@ -4,6 +4,7 @@ See: http://www.mathworks.com/help/matlab/matlab-engine-for-python.html
 """
 from __future__ import absolute_import, print_function
 import sys
+import numpy as np
 try:
     from StringIO import StringIO
 except ImportError:
@@ -144,17 +145,110 @@ class MathworksEngine(PyopyEngine):
         finally:
             self._eval = None
     
+
+    # def _run_function_hook(self, nout, funcname, args):
+    #     """Hook to run function using matlabengine's feval."""
+    #     matlab_eng = self.session() # Get the actual matlab engine session
+
+    #     # --- NEW: Robust Type Conversion for Python 3 / hctsa ---
+    #     converted_args = []
+    #     for arg in args:
+    #         if isinstance(arg, int):
+    #             # Convert single Python int to float
+    #             converted_args.append(float(arg))
+
+    #         elif isinstance(arg, list):
+    #             # Convert list of numbers to list of floats
+    #             try:
+    #                 # Check if all items are numeric
+    #                 if all(isinstance(x, (int, float)) for x in arg):
+    #                     converted_args.append([float(x) for x in arg])
+    #                 else:
+    #                     converted_args.append(arg) # List of strings, etc.
+    #             except TypeError:
+    #                 converted_args.append(arg) # Not an iterable
+
+    #         elif isinstance(arg, np.ndarray):
+    #             # Convert numpy int arrays to float64 (MATLAB's double)
+    #             if np.issubdtype(arg.dtype, np.integer):
+    #                 converted_args.append(arg.astype(np.float64))
+    #             else:
+    #                 converted_args.append(arg) # Already float or other
+
+    #         else:
+    #             # Pass all other types (strings, etc.) as-is
+    #             converted_args.append(arg)
+
+    #     # Use the newly converted args tuple
+    #     args_float = tuple(converted_args)
+    #     # --- END NEW BLOCK ---
+
+    #     # Use getattr to get the function from the engine object
+    #     # and call it directly with unpacked arguments.
+    #     return getattr(matlab_eng, funcname)(*args_float, nargout=nout)
+
     def _run_function_hook(self, nout, funcname, args):
         """Hook to run function using matlabengine's feval."""
         matlab_eng = self.session() # Get the actual matlab engine session
+
+        # --- NEW: Robust Type Conversion for Python 3 / hctsa ---
+        converted_args = []
+        for arg in args:
+            
+            # --- !! ADDED THIS BLOCK TO HANDLE 'None' !! ---
+            if arg is None:
+                # Convert Python's None to MATLAB's NaN.
+                # This is the safest way to represent "missing" or "default"
+                # in a way that MATLAB's engine can understand.
+                converted_args.append(np.nan)
+            # --- !! END NEW BLOCK !! ---
+
+            elif isinstance(arg, int):
+                # Convert single Python int to float
+                converted_args.append(float(arg))
+            
+            elif isinstance(arg, list):
+                # Convert list of numbers to list of floats
+                try:
+                    # Check if all items are numeric
+                    if all(isinstance(x, (int, float)) for x in arg):
+                        converted_args.append([float(x) for x in arg])
+                    else:
+                        converted_args.append(arg) # List of strings, etc.
+                except TypeError:
+                    converted_args.append(arg) # Not an iterable
+            
+            elif isinstance(arg, np.ndarray):
+                # Convert numpy int arrays to float64 (MATLAB's double)
+                if np.issubdtype(arg.dtype, np.integer):
+                    converted_args.append(arg.astype(np.float64))
+                else:
+                    converted_args.append(arg) # Already float or other
+            
+            else:
+                # Pass all other types (strings, etc.) as-is
+                converted_args.append(arg)
+
+        # Use the newly converted args tuple
+        args_float = tuple(converted_args)
+        # --- END NEW BLOCK ---
+
         # Use getattr to get the function from the engine object
         # and call it directly with unpacked arguments.
-        # Ensure args is a tuple or list for unpacking with *
-        if not isinstance(args, (list, tuple)):
-            args = (args,)
-        # Convert integer args to float for MATLAB
-        args_float = tuple(float(a) if isinstance(a, int) else a for a in args)
         return getattr(matlab_eng, funcname)(*args_float, nargout=nout)
+
+
+    # def _run_function_hook(self, nout, funcname, args):
+    #     """Hook to run function using matlabengine's feval."""
+    #     matlab_eng = self.session() # Get the actual matlab engine session
+    #     # Use getattr to get the function from the engine object
+    #     # and call it directly with unpacked arguments.
+    #     # Ensure args is a tuple or list for unpacking with *
+    #     if not isinstance(args, (list, tuple)):
+    #         args = (args,)
+    #     # Convert integer args to float for MATLAB
+    #     args_float = tuple(float(a) if isinstance(a, int) else a for a in args)
+    #     return getattr(matlab_eng, funcname)(*args_float, nargout=nout)
 
 
 if __name__ == '__main__':
